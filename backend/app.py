@@ -25,11 +25,12 @@ app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
 # CORS — allow frontend on any origin during dev
 CORS(app)
 
-# Rate limiting — 10 req/min per IP (Operational Guardrail 6)
+# Rate limiting — Operational Guardrail 6
+# 30 req/min for most routes; /api/assistant gets its own 60/min (chatbot UX)
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["200 per day", "10 per minute"],
+    default_limits=["500 per day", "30 per minute"],
     storage_uri="memory://",
 )
 

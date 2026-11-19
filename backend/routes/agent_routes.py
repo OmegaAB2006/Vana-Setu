@@ -1,8 +1,4 @@
 """
-agent_routes.py — All agent + auth API endpoints.
-"""
-
-"""
 agent_routes.py — All agent API endpoints.
 Applies guardrail_engine decorator to every route.
 """

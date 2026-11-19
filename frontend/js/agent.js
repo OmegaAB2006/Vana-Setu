@@ -116,24 +116,28 @@
     { name: "Tumkur",             lat: 13.3379, lng: 77.1173, info: "Satellite city 70 km north of Bengaluru — industrial and agricultural hub." },
   ];
 
-  // ── Build a fuzzy-match lookup from the places list ────────────────────────
-  // Maps every alias (lowercase, trimmed) → place object
+  // ── Build a place lookup (longest-match, full-name priority) ──────────────
+  // Words that are common English/platform words — never treat as place names
+  const PLACE_STOP_WORDS = new Set([
+    "show", "find", "locate", "mark", "map", "here", "this", "that", "tree",
+    "ward", "open", "page", "scan", "help", "about", "what", "where", "health",
+    "home", "list", "data", "site", "info", "park", "road", "nagar", "layout",
+  ]);
+
   const PLACE_INDEX = new Map();
   BLR_PLACES.forEach(p => {
-    // Index by full name and each word of the name separately
-    PLACE_INDEX.set(p.name.toLowerCase(), p);
+    PLACE_INDEX.set(p.name.toLowerCase(), p);          // full name always indexed
     p.name.toLowerCase().split(/[\s\-–\/]+/).forEach(word => {
-      if (word.length >= 4) PLACE_INDEX.set(word, p);
+      // Only index single words that are ≥5 chars and not stop-words
+      if (word.length >= 5 && !PLACE_STOP_WORDS.has(word)) {
+        PLACE_INDEX.set(word, p);
+      }
     });
   });
 
-  /**
-   * Detect if the user is asking about a specific place.
-   * Returns the matched place object or null.
-   */
   function detectPlace(text) {
     const t = text.toLowerCase();
-    // 1. Try exact full-name match first (longest match wins)
+    // Sort keys longest-first so "Cubbon Park" beats "park"
     const sorted = [...PLACE_INDEX.keys()].sort((a, b) => b.length - a.length);
     for (const key of sorted) {
       if (t.includes(key)) return PLACE_INDEX.get(key);
@@ -143,13 +147,19 @@
 
   // ── Page navigation map ────────────────────────────────────────────────────
   const PAGE_ALIASES = {
-    home:      ["home", "dashboard", "main", "start", "overview", "landing", "beginning"],
-    map:       ["map", "green cover", "green map", "ward map", "coverage", "vegetation", "ndvi", "deficient wards", "green space"],
-    inventory: ["inventory", "tree list", "tree registry", "trees", "all trees", "tree count", "species", "ward trees"],
-    health:    ["health", "health scanner", "scan", "diagnose", "disease", "sick tree", "tree health", "analyse", "analyze", "upload image"],
-    metrics:   ["metrics", "ai dashboard", "performance", "accuracy", "rag", "agentic", "guardrail", "llm", "cost", "multi-agent", "multiagent"],
-    approvals: ["approval", "approvals", "pending", "pending approval", "officer approval", "review"],
+    home:      ["home page", "go home", "dashboard page", "main page", "start page", "overview page"],
+    map:       ["green cover", "green map", "ward map", "coverage map", "vegetation map", "ndvi", "deficient wards", "green space map"],
+    inventory: ["inventory", "tree list", "tree registry", "tree count", "ward trees"],
+    health:    ["health scanner", "scan a tree", "diagnose tree", "upload image", "analyse tree", "analyze tree"],
+    metrics:   ["metrics", "ai dashboard", "performance dashboard", "rag metrics", "agentic metrics", "guardrail metrics", "llm dashboard"],
+    approvals: ["approvals", "pending approvals", "officer approvals"],
   };
+
+  // Explicit navigation verbs that must be present to trigger page nav
+  const NAV_VERBS = [
+    "go to", "open", "show me the", "navigate to", "take me to",
+    "switch to", "i want to see", "bring me to", "head to",
+  ];
 
   // ── Quick answers ──────────────────────────────────────────────────────────
   const QUICK_ANSWERS = [
@@ -175,18 +185,20 @@
     },
   ];
 
-  // ── Detect navigation intent ───────────────────────────────────────────────
+  // ── Detect navigation intent — requires a nav verb ────────────────────────
   function detectNavIntent(text) {
     const t = text.toLowerCase();
-    const NAV_VERBS = ["go to", "open", "show me", "navigate to", "take me to", "switch to", "i want to see", "bring me to", "head to", "visit"];
-    let hasVerb = NAV_VERBS.some(v => t.includes(v));
+    const hasVerb = NAV_VERBS.some(v => t.includes(v));
+    if (!hasVerb) return null;   // never navigate without an explicit verb
     for (const [panel, aliases] of Object.entries(PAGE_ALIASES)) {
       for (const alias of aliases) {
-        if (t.includes(alias)) {
-          if (!hasVerb && ["trees", "species", "agents"].includes(alias)) continue;
-          if (hasVerb || t.includes("page") || t.includes("panel") || t.includes("section")) return panel;
-        }
+        if (t.includes(alias)) return panel;
       }
+    }
+    // Handle plain "go to map / inventory / health / metrics / approvals / home"
+    const plainPanels = { map: "map", inventory: "inventory", health: "health", metrics: "metrics", approvals: "approvals", home: "home" };
+    for (const [word, panel] of Object.entries(plainPanels)) {
+      if (hasVerb && t.includes(word)) return panel;
     }
     return null;
   }
@@ -200,17 +212,39 @@
     return null;
   }
 
-  // ── Simple markdown → HTML ─────────────────────────────────────────────────
+  // ── Markdown → HTML (with proper ul/ol wrapping) ──────────────────────────
   function mdToHtml(text) {
-    return text
+    // Bold, italic, code
+    let html = text
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/\*(.+?)\*/g, "<em>$1</em>")
-      .replace(/`(.+?)`/g, "<code>$1</code>")
-      .replace(/\n• /g, "\n<li>")
-      .replace(/^• /g, "<li>")
-      .replace(/\n(\d+)\. /g, (_, n) => `\n<li>${n}. `)
-      .replace(/^(\d+)\. /g, (_, n) => `<li>${n}. `)
-      .replace(/\n/g, "<br>");
+      .replace(/`(.+?)`/g, "<code>$1</code>");
+
+    // Split into lines and process bullets / numbered lists
+    const lines = html.split("\n");
+    const out = [];
+    let inUl = false, inOl = false;
+
+    for (const line of lines) {
+      const bullet  = line.match(/^[•\-]\s+(.*)/);
+      const numbered = line.match(/^(\d+)\.\s+(.*)/);
+      if (bullet) {
+        if (!inUl) { out.push("<ul>"); inUl = true; }
+        if (inOl)  { out.push("</ol>"); inOl = false; }
+        out.push(`<li>${bullet[1]}</li>`);
+      } else if (numbered) {
+        if (!inOl) { out.push("<ol>"); inOl = true; }
+        if (inUl)  { out.push("</ul>"); inUl = false; }
+        out.push(`<li>${numbered[2]}</li>`);
+      } else {
+        if (inUl) { out.push("</ul>"); inUl = false; }
+        if (inOl) { out.push("</ol>"); inOl = false; }
+        out.push(line ? `<p style="margin:3px 0">${line}</p>` : "");
+      }
+    }
+    if (inUl) out.push("</ul>");
+    if (inOl) out.push("</ol>");
+    return out.join("");
   }
 
   // ── Build the widget DOM ───────────────────────────────────────────────────
@@ -348,19 +382,22 @@
 
     const t = text.toLowerCase();
 
-    // ── 1. Place spotlight — highest priority ──────────────────────────────
-    const place = detectPlace(t);
-    const PLACE_TRIGGERS = ["show", "where is", "where's", "locate", "find", "point", "mark", "highlight", "map of", "on the map", "on map", "in bangalore", "in bengaluru"];
-    const hasPlaceTrigger = PLACE_TRIGGERS.some(tr => t.includes(tr)) || t.startsWith("where") || t.startsWith("show") || t.startsWith("find") || t.startsWith("locate");
+    // ── 1. Place spotlight — explicit trigger required ─────────────────────
+    const PLACE_TRIGGERS = [
+      "show me", "where is", "where's", "locate", "find", "point to",
+      "mark", "highlight", "map of", "on the map", "on map",
+      "in bangalore", "in bengaluru", "show on map",
+    ];
+    const hasPlaceTrigger = PLACE_TRIGGERS.some(tr => t.includes(tr));
+    const place = hasPlaceTrigger ? detectPlace(t) : null;
 
-    if (place && (hasPlaceTrigger || t.split(" ").length <= 5)) {
+    if (place) {
       await new Promise(r => setTimeout(r, 500));
       removeTyping();
       appendMsg("agent",
-        `Sure! Here's <strong>${place.name}</strong> on the map. ${place.info ? `<br><em>${place.info}</em>` : ""}`,
+        `Sure! Here's <strong>${place.name}</strong> on the map.<br><em style="font-size:12px;color:#617849">${place.info || ""}</em>`,
         { type: "place", place }
       );
-      // Auto-spotlight immediately
       closePanel();
       window.spotlightPlace && window.spotlightPlace(place.name, place.lat, place.lng, place.info);
       return;
