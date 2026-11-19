@@ -305,3 +305,120 @@ def public_stats():
         "deficient_wards":  len(deficient),
         "weather":          weather,
     })
+
+
+# ── Global AI Assistant ───────────────────────────────────────────────────────
+
+@agent_bp.route("/assistant", methods=["POST"])
+def assistant():
+    """
+    Global AI assistant endpoint.
+    Understands natural language, answers questions about the platform,
+    returns live data summaries, and signals which page to navigate to.
+    """
+    body = request.get_json(silent=True) or {}
+    query = (body.get("query") or "").strip()
+    if not query:
+        return jsonify({"reply": "Please type a question.", "navigate_to": None})
+
+    q = query.lower()
+
+    # ── Navigation intent detection ──────────────────────────────────────────
+    PAGE_ALIASES = {
+        "home":      ["home", "dashboard", "main", "start", "overview"],
+        "map":       ["map", "green cover", "ward map", "coverage", "vegetation", "ndvi", "deficient wards", "green space"],
+        "inventory": ["inventory", "tree list", "tree registry", "how many trees", "species list"],
+        "health":    ["health scanner", "scan", "diagnose", "disease", "sick tree", "analyse tree", "analyze tree", "upload image"],
+        "metrics":   ["metrics", "ai dashboard", "performance", "accuracy", "rag metrics", "guardrail metrics", "llm stats"],
+        "approvals": ["approval", "approvals", "pending approval", "officer approval"],
+    }
+    nav_panel = None
+    for panel, aliases in PAGE_ALIASES.items():
+        if any(alias in q for alias in aliases):
+            nav_panel = panel
+            break
+
+    # ── Live data queries ─────────────────────────────────────────────────────
+    try:
+        if any(kw in q for kw in ["how many trees", "total trees", "tree count", "trees registered"]):
+            from backend.agents.inventory_agent import get_summary
+            s = get_summary()
+            return jsonify({
+                "reply": f"There are currently **{s['total_trees']} trees** registered in Vana Sethu. Average health score is **{s['avg_health_score']}/100** and **{s['maintenance_due']}** need maintenance.",
+                "navigate_to": "inventory",
+            })
+
+        if any(kw in q for kw in ["deficient ward", "which wards", "worst ward", "low green cover", "green cover below"]):
+            from backend.agents.mapping_agent import get_deficient_wards
+            wards = get_deficient_wards(15.0)
+            if wards:
+                worst = wards[0]
+                names_str = ", ".join([f"Ward {w['ward_id']} ({w['green_cover_pct']}%)" for w in wards[:3]])
+                return jsonify({
+                    "reply": f"**{len(wards)} wards** are below 15% green cover. The worst is **Ward {worst['ward_id']}** at {worst['green_cover_pct']}%. Top deficient: {names_str}.",
+                    "navigate_to": "map",
+                })
+            return jsonify({"reply": "All wards are currently above the 15% green cover threshold. 🌳", "navigate_to": "map"})
+
+        if any(kw in q for kw in ["weather", "temperature", "rain", "humidity", "current weather"]):
+            from backend.live_data.weather_fetcher import get_latest_weather
+            w = get_latest_weather()
+            if w.get("temperature"):
+                return jsonify({
+                    "reply": f"Current Bengaluru weather: **{w['temperature']}°C**, {w.get('condition_text','—')}. Humidity: {w.get('humidity','—')}%, Rainfall: {w.get('rainfall', 0)}mm.",
+                    "navigate_to": None,
+                })
+            return jsonify({"reply": "Weather data is being fetched. Please check back shortly.", "navigate_to": None})
+
+        if any(kw in q for kw in ["health score", "average health", "tree health", "avg health"]):
+            from backend.agents.inventory_agent import get_summary
+            s = get_summary()
+            return jsonify({
+                "reply": f"The average tree health score across Bengaluru is **{s['avg_health_score']}/100**. {s['maintenance_due']} trees are flagged for maintenance.",
+                "navigate_to": "health",
+            })
+
+        if any(kw in q for kw in ["summary", "overview", "stats", "statistics", "platform status"]):
+            from backend.agents.dashboard_agent import get_dashboard_summary
+            d = get_dashboard_summary()
+            inv = d.get("inventory", {})
+            return jsonify({
+                "reply": (
+                    f"**Platform Summary:**\n"
+                    f"• **{inv.get('total_trees','—')} trees** registered\n"
+                    f"• Average health score: **{inv.get('avg_health_score','—')}/100**\n"
+                    f"• Trees needing maintenance: **{inv.get('maintenance_due','—')}**\n"
+                    f"• Deficient wards (< 15% green cover): **{d.get('deficient_wards_count','—')}**"
+                ),
+                "navigate_to": nav_panel or "home",
+            })
+
+    except Exception as e:
+        pass  # fall through to generic response
+
+    # ── Generic contextual responses ──────────────────────────────────────────
+    GENERIC = {
+        "help": "I can help you with:\n• **Navigation** — just say *'go to inventory'* or *'open health scanner'*\n• **Live data** — ask about tree counts, ward coverage, weather\n• **Platform info** — agents, guardrails, login credentials\n\nWhat would you like to know?",
+        "ward": f"Vana Sethu monitors **10 BBMP wards** across Bengaluru. Each ward has a live green cover score updated every 30 minutes. Open the Green Cover Map to explore them!",
+        "agent": "Vana Sethu has **4 AI agents**: Health Agent, Inventory Agent, Mapping Agent, and Dashboard Agent. The Dashboard Agent orchestrates the others and routes your queries.",
+        "guardrail": "Every request passes through **9 guardrail layers**: input validation, PII masking, tool safety, output filtering, RBAC, HITL approval, ethics checks, loop detection, and rate limiting.",
+    }
+    for key, reply in GENERIC.items():
+        if key in q:
+            return jsonify({"reply": reply, "navigate_to": nav_panel})
+
+    # ── If we detected navigation intent but have no specific answer ──────────
+    if nav_panel:
+        labels = {"home": "Home", "map": "Green Cover Map", "inventory": "Tree Inventory",
+                  "health": "Health Scanner", "metrics": "AI Dashboard", "approvals": "Approvals"}
+        return jsonify({
+            "reply": f"Taking you to the **{labels[nav_panel]}** page!",
+            "navigate_to": nav_panel,
+        })
+
+    # ── Fallback ──────────────────────────────────────────────────────────────
+    return jsonify({
+        "reply": "I'm not sure I understood that. Try asking about *tree counts*, *ward green cover*, *weather*, or say *'go to map'* to navigate. Type **help** for more options.",
+        "navigate_to": None,
+    })
+
