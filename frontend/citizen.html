@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Vana Sethu — Citizen Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Serif:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g:#2E7D32;--gd:#1B5E20;--gp:#E8F5E9;--gb:#f5f7f2;
+  --text:#1a2210;--muted:#617849;--card:#fff;--border:#d8e4c8;
+  --amber:#E65100;--red:#C62828;--blue:#1565C0;
+  --font:'IBM Plex Sans',system-ui,sans-serif;
+  --serif:'IBM Plex Serif',Georgia,serif;
+}
+body{font-family:var(--font);font-size:14px;color:var(--text);background:var(--gb)}
+/* NAV */
+.topnav{position:sticky;top:0;z-index:100;height:60px;background:rgba(255,255,255,.97);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;backdrop-filter:blur(8px)}
+.brand{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600;color:var(--text)}
+.brand strong{color:var(--g)}
+.nav-pill{margin-left:auto;display:flex;gap:8px}
+.btn-login{background:var(--g);color:#fff;border:none;border-radius:20px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-login:hover{background:var(--gd)}
+.btn-outline{background:transparent;color:var(--g);border:1.5px solid var(--g);border-radius:20px;padding:7px 18px;font-size:13px;font-weight:600;cursor:pointer}
+.user-pill{display:none;align-items:center;gap:10px;background:var(--gp);border-radius:20px;padding:6px 14px;font-size:13px;color:var(--gd);font-weight:500}
+/* HERO */
+.hero{position:relative;min-height:580px;background:radial-gradient(ellipse at 25% 65%,rgba(27,94,32,.88) 0%,transparent 55%),radial-gradient(ellipse at 80% 25%,rgba(56,142,60,.65) 0%,transparent 50%),linear-gradient(145deg,#1a3a1f 0%,#2d5a2e 40%,#3a7a3d 100%);overflow:hidden;display:flex;align-items:center}
+.hero-content{position:relative;z-index:2;max-width:620px;padding:60px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:14px}
+.hero-title{font-family:var(--serif);font-size:clamp(28px,4.5vw,52px);font-weight:600;line-height:1.15;color:#fff;margin-bottom:18px}
+.hero-title em{color:#a5d6a7;font-style:italic}
+.hero-desc{font-size:15px;color:rgba(255,255,255,.78);line-height:1.75;max-width:480px;margin-bottom:30px}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap}
+.btn-hero{background:#fff;color:var(--gd);border:none;border-radius:24px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.btn-hero:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.btn-hero-o{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.65);border-radius:24px;padding:11px 26px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-hero-o:hover{background:rgba(255,255,255,.12)}
+/* Floating stats on hero */
+.f-stat{position:absolute;z-index:3;background:rgba(255,255,255,.13);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:16px 22px;text-align:center;min-width:120px}
+.f-stat.s1{top:60px;right:60px}
+.f-stat.s2{bottom:70px;right:220px}
+.f-stat.s3{top:200px;right:200px}
+.f-stat-num{font-size:30px;font-weight:700;color:#fff}
+.f-stat-lbl{font-size:11px;color:rgba(255,255,255,.75);margin-top:3px}
+/* CURVE */
+.curve{margin-top:-1px;line-height:0}
+.curve svg{width:100%;display:block}
+/* STATS STRIP */
+.stats-strip{display:flex;gap:16px;padding:0 32px 32px;flex-wrap:wrap}
+.s-card{flex:1;min-width:140px;background:var(--card);border-radius:10px;box-shadow:0 1px 6px rgba(30,70,20,.08);padding:20px;border-top:3px solid var(--g);display:flex;align-items:center;gap:14px;transition:transform .2s,box-shadow .2s}
+.s-card:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(30,70,20,.12)}
+.s-card.amber{border-top-color:var(--amber)}
+.s-card.blue{border-top-color:var(--blue)}
+.s-card.red{border-top-color:var(--red)}
+.s-icon{font-size:26px}
+.s-val{font-size:26px;font-weight:700;line-height:1}
+.s-lbl{font-size:11.5px;color:var(--muted);margin-top:4px}
+/* SECTIONS */
+.section{padding:0 32px 40px}
+.section h2{font-family:var(--serif);font-size:22px;font-weight:600;margin-bottom:18px}
+.section-eyebrow{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--g);margin-bottom:8px}
+/* FEATURES grid */
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:32px}
+.feat{background:var(--card);border-radius:12px;padding:24px;box-shadow:0 1px 5px rgba(30,70,20,.07)}
+.feat-icon{font-size:32px;margin-bottom:12px}
+.feat h3{font-size:14px;font-weight:600;margin-bottom:6px}
+.feat p{font-size:13px;color:var(--muted);line-height:1.6}
+/* REPORT FORM */
+.report-form{background:var(--card);border-radius:14px;padding:28px;box-shadow:0 1px 6px rgba(30,70,20,.08);max-width:600px}
+.form-row{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.form-row input,.form-row select,.form-row textarea{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;outline:none;min-width:180px}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--g)}
+textarea{resize:vertical;min-height:80px}
+.btn-submit{background:var(--g);color:#fff;border:none;border-radius:24px;padding:11px 28px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
+.btn-submit:hover{background:var(--gd)}
+.form-success{display:none;background:var(--gp);border:1px solid var(--border);border-radius:8px;padding:14px 18px;color:var(--gd);font-size:13px;margin-top:12px;font-weight:500}
+/* AI CHAT WIDGET */
+.chat-fab{position:fixed;bottom:28px;right:28px;z-index:500;width:56px;height:56px;border-radius:50%;background:var(--g);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(30,70,20,.35);display:flex;align-items:center;justify-content:center;transition:transform .2s}
+.chat-fab:hover{transform:scale(1.08)}
+.chat-window{position:fixed;bottom:98px;right:28px;z-index:500;width:360px;height:480px;background:var(--card);border-radius:16px;box-shadow:0 8px 40px rgba(30,70,20,.18);border:1px solid var(--border);display:none;flex-direction:column;overflow:hidden}
+.chat-window.open{display:flex}
+.chat-header{background:var(--g);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.chat-header-title{flex:1;font-size:14px;font-weight:600}
+.chat-close{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;line-height:1}
+.chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#f8fdf5}
+.chat-msg{max-width:82%;padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.5}
+.chat-msg.bot{background:var(--gp);color:var(--text);border-bottom-left-radius:3px;align-self:flex-start}
+.chat-msg.user{background:var(--g);color:#fff;border-bottom-right-radius:3px;align-self:flex-end}
+.chat-msg.typing{background:var(--gp);color:var(--muted);font-style:italic}
+.chat-footer{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:#fff}
+.chat-input{flex:1;padding:9px 14px;border:1.5px solid var(--border);border-radius:20px;font-family:var(--font);font-size:13px;outline:none}
+.chat-input:focus{border-color:var(--g)}
+.chat-send{background:var(--g);color:#fff;border:none;border-radius:20px;padding:9px 16px;font-size:13px;cursor:pointer}
+.chat-quick{padding:0 14px 10px;display:flex;gap:6px;flex-wrap:wrap;background:#fff}
+.qbtn{background:var(--gp);border:1px solid var(--border);color:var(--gd);border-radius:16px;padding:5px 12px;font-size:11.5px;cursor:pointer;font-family:var(--font)}
+.qbtn:hover{background:var(--border)}
+/* LOGIN MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);z-index:900;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--card);border-radius:16px;padding:36px;width:380px;box-shadow:0 8px 40px rgba(30,70,20,.18)}
+.modal-box h2{font-size:20px;font-weight:600;margin-bottom:4px}
+.modal-box p{font-size:13px;color:var(--muted);margin-bottom:22px}
+.modal-field{margin-bottom:14px}
+.modal-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.modal-field input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:14px;outline:none}
+.modal-field input:focus{border-color:var(--g)}
+.modal-error{color:var(--red);font-size:12.5px;margin-bottom:10px;display:none}
+.modal-btn{width:100%;background:var(--g);color:#fff;border:none;border-radius:24px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
+.modal-btn:hover{background:var(--gd)}
+.modal-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);margin-top:-4px}
+.demo-hint{background:var(--gp);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:18px}
+.demo-hint strong{color:var(--gd)}
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a3a1f;color:#fff;border-left:4px solid var(--g);border-radius:8px;padding:12px 20px;font-size:13px;z-index:999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+/* FOOTER */
+footer{background:var(--gd);color:rgba(255,255,255,.7);padding:20px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:40px}
+footer span{font-size:12px}
+/* RESP */
+@media(max-width:800px){.features{grid-template-columns:1fr 1fr}.f-stat{display:none}.hero-content{padding:40px 20px}.stats-strip{padding:0 16px 24px}.section{padding:0 16px 32px}}
+@media(max-width:500px){.features{grid-template-columns:1fr}.chat-window{width:calc(100vw - 32px);right:16px}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<header class="topnav">
+  <div class="brand">
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="#2E7D32"/><path d="M16 7C11 7 7 11 7 15.5c0 3.5 2.5 6 9 9.5 6.5-3.5 9-6 9-9.5C25 11 21 7 16 7z" fill="#fff" opacity=".9"/><rect x="15" y="20" width="2" height="6" rx="1" fill="#fff"/></svg>
+    Vana <strong>Sethu</strong>
+  </div>
+  <nav style="display:flex;gap:4px;margin-left:28px">
+    <a href="index.html" style="padding:6px 14px;border-radius:20px;text-decoration:none;font-size:13px;color:#617849">Admin Dashboard</a>
+    <a href="govt.html"  style="padding:6px 14px;border-radius:20px;text-decoration:none;font-size:13px;color:#617849">Govt Portal</a>
+  </nav>
+  <div class="nav-pill">
+    <div class="user-pill" id="user-pill">👤 <span id="user-name"></span></div>
+    <button class="btn-outline" onclick="openLogin()">Log In</button>
+    <button class="btn-login"   onclick="openLogin()">Report a Tree</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-content">
+    <p class="eyebrow">Citizen Portal · Vana Sethu</p>
+    <h1 class="hero-title">Your Trees.<br/><em>Your City.</em></h1>
+    <p class="hero-desc">Help us protect Bengaluru's urban forest. Report a sick tree, check green cover in your ward, or ask our AI assistant about trees near you.</p>
+    <div class="cta-row">
+      <button class="btn-hero" onclick="document.getElementById('report-section').scrollIntoView({behavior:'smooth'})">🌿 Report a Tree</button>
+      <button class="btn-hero-o" id="open-chat-hero">💬 Ask AI Assistant</button>
+    </div>
+  </div>
+  <div class="f-stat s1"><div class="f-stat-num" id="fs-trees">—</div><div class="f-stat-lbl">Trees Registered</div></div>
+  <div class="f-stat s2"><div class="f-stat-num" id="fs-wards">—</div><div class="f-stat-lbl">Wards Monitored</div></div>
+  <div class="f-stat s3"><div class="f-stat-num" id="fs-health">—</div><div class="f-stat-lbl">Avg Health Score</div></div>
+</div>
+<div class="curve"><svg viewBox="0 0 1440 70" preserveAspectRatio="none"><path d="M0,0 C360,70 1080,70 1440,0 L1440,70 L0,70 Z" fill="#f5f7f2"/></svg></div>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="s-card"><div class="s-icon">🌳</div><div><div class="s-val" id="st-trees">—</div><div class="s-lbl">Trees in Registry</div></div></div>
+  <div class="s-card blue"><div class="s-icon">💚</div><div><div class="s-val" id="st-health">—</div><div class="s-lbl">Avg Health Score</div></div></div>
+  <div class="s-card amber"><div class="s-icon">⚠️</div><div><div class="s-val" id="st-wards">—</div><div class="s-lbl">Wards Need Attention</div></div></div>
+  <div class="s-card red"><div class="s-icon">🔧</div><div><div class="s-val" id="st-maint">—</div><div class="s-lbl">Maintenance Alerts</div></div></div>
+  <div class="s-card"><div class="s-icon">🌡</div><div><div class="s-val" id="st-temp">—</div><div class="s-lbl">Live Temp · Bengaluru</div></div></div>
+</div>
+
+<!-- FEATURES -->
+<div class="section">
+  <p class="section-eyebrow">What you can do</p>
+  <h2>Protect Bengaluru's Green Cover</h2>
+  <div class="features">
+    <div class="feat"><div class="feat-icon">📸</div><h3>Report a Sick Tree</h3><p>Spotted a wilting or damaged tree? Submit a photo and location — our AI analyses it instantly.</p></div>
+    <div class="feat"><div class="feat-icon">🗺</div><h3>Check Your Ward's Green Cover</h3><p>See real-time satellite data on how much green cover your ward has and how it compares to neighbours.</p></div>
+    <div class="feat"><div class="feat-icon">💬</div><h3>Ask the AI Assistant</h3><p>Ask anything — "What trees are in Ward 7?", "Is the Rain Tree near MG Road healthy?" — get instant answers.</p></div>
+    <div class="feat"><div class="feat-icon">🔔</div><h3>Maintenance Alerts</h3><p>See which trees in your area need urgent attention and what BBMP is doing about them.</p></div>
+    <div class="feat"><div class="feat-icon">🌱</div><h3>Plantation Recommendations</h3><p>Find out which species are best suited for planting in your ward based on soil and climate data.</p></div>
+    <div class="feat"><div class="feat-icon">📊</div><h3>Live City Stats</h3><p>Track Bengaluru's total tree count, health trends, and green cover percentage in real time.</p></div>
+  </div>
+</div>
+
+<!-- REPORT FORM -->
+<div class="section" id="report-section">
+  <p class="section-eyebrow">Citizen Reporting</p>
+  <h2>Report a Tree</h2>
+  <div class="report-form">
+    <div class="form-row">
+      <input type="text" id="r-name" placeholder="Your name (optional)"/>
+      <input type="number" id="r-ward" placeholder="Ward number (1–198)" min="1" max="198"/>
+    </div>
+    <div class="form-row">
+      <select id="r-issue">
+        <option value="">Select issue type</option>
+        <option>Yellowing / wilting leaves</option>
+        <option>Broken or fallen branches</option>
+        <option>Tree leaning / root damage</option>
+        <option>Fungal disease / spots</option>
+        <option>Pest infestation</option>
+        <option>Tree fell on road / property</option>
+        <option>Other</option>
+      </select>
+      <input type="text" id="r-species" placeholder="Species (if known)"/>
+    </div>
+    <div class="form-row">
+      <textarea id="r-desc" placeholder="Describe the issue in detail…"></textarea>
+    </div>
+    <button class="btn-submit" onclick="submitReport()">Submit Report →</button>
+    <div class="form-success" id="form-success">✅ Report submitted! BBMP officers have been notified and will inspect within 48 hours.</div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeLogin()">×</button>
+    <h2>Citizen Login</h2>
+    <p>Log in to track your reports and earn Green Points.</p>
+    <div class="demo-hint">🔑 Demo — use <strong>citizen@vanasethu.in</strong> / <strong>citizen123</strong></div>
+    <div class="modal-field"><label>Email</label><input type="email" id="l-email" placeholder="citizen@vanasethu.in" value="citizen@vanasethu.in"/></div>
+    <div class="modal-field"><label>Password</label><input type="password" id="l-pass" placeholder="••••••••" value="citizen123"/></div>
+    <div class="modal-error" id="l-error"></div>
+    <button class="modal-btn" onclick="doLogin()">Log In</button>
+  </div>
+</div>
+
+<!-- AI CHAT WIDGET -->
+<button class="chat-fab" id="chat-fab" title="Ask AI Assistant">🌿</button>
+<div class="chat-window" id="chat-window">
+  <div class="chat-header">
+    <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="#fff" opacity=".25"/><path d="M16 8C12 8 9 11 9 15c0 3 2 5 7 7.5 5-2.5 7-4.5 7-7.5 0-4-3-7-7-7z" fill="#fff"/></svg>
+    <div class="chat-header-title">Vana Sethu AI · Citizen Assistant</div>
+    <button class="chat-close" onclick="toggleChat()">×</button>
+  </div>
+  <div class="chat-body" id="chat-body"></div>
+  <div class="chat-quick" id="chat-quick">
+    <button class="qbtn" onclick="quickMsg('How many trees are in Ward 7?')">Trees in Ward 7</button>
+    <button class="qbtn" onclick="quickMsg('Which wards have low green cover?')">Low green cover</button>
+    <button class="qbtn" onclick="quickMsg('Show sick trees near me')">Sick trees</button>
+    <button class="qbtn" onclick="quickMsg('What is the weather today?')">Today's weather</button>
+  </div>
+  <div class="chat-footer">
+    <input class="chat-input" id="chat-input" placeholder="Ask about trees, wards, health…" onkeydown="if(event.key==='Enter')sendChat()"/>
+    <button class="chat-send" onclick="sendChat()">Send</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>
+  <span>🌿 Vana Sethu — Smart Urban Tree Platform · Bengaluru</span>
+  <span>IBM Bob Hackathon · Citizen Portal</span>
+</footer>
+
+<script>
+const API = "http://127.0.0.1:5001/api";
+
+// ── Load public stats ──────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch(`${API}/public/stats`);
+    const d = await r.json();
+    ['fs-trees','st-trees'].forEach(id => setEl(id, d.total_trees ?? '—'));
+    ['fs-health','st-health'].forEach(id => setEl(id, d.avg_health_score ?? '—'));
+    ['fs-wards','st-wards'].forEach(id => setEl(id, d.deficient_wards ?? '—'));
+    setEl('st-maint', d.maintenance_due ?? '—');
+    setEl('st-temp',  d.weather ? d.weather.temperature + '°C' : '—');
+  } catch(e) { console.error('Stats load failed',e); }
+}
+function setEl(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
+
+// ── Report form ────────────────────────────────────────────────────────────
+function submitReport(){
+  const ward = document.getElementById('r-ward').value;
+  const issue= document.getElementById('r-issue').value;
+  if(!ward||!issue){showToast('Please fill in ward number and issue type.','amber');return;}
+  document.getElementById('form-success').style.display='block';
+  showToast('✅ Report submitted!');
+  setTimeout(()=>{
+    document.getElementById('r-name').value='';
+    document.getElementById('r-ward').value='';
+    document.getElementById('r-issue').value='';
+    document.getElementById('r-species').value='';
+    document.getElementById('r-desc').value='';
+  },3000);
+}
+
+// ── Login ──────────────────────────────────────────────────────────────────
+function openLogin(){document.getElementById('login-modal').classList.add('open')}
+function closeLogin(){document.getElementById('login-modal').classList.remove('open')}
+document.getElementById('login-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeLogin()});
+
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const pass =document.getElementById('l-pass').value;
+  const err  =document.getElementById('l-error');
+  err.style.display='none';
+  try{
+    const r=await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const d=await r.json();
+    if(d.status!=='ok'){err.textContent=d.message||'Login failed';err.style.display='block';return;}
+    if(d.role==='officer'||d.role==='admin'){
+      window.location.href='govt.html?token='+encodeURIComponent(d.token);return;
+    }
+    localStorage.setItem('auth_token',d.token);
+    localStorage.setItem('user_name',d.name);
+    closeLogin();
+    document.getElementById('user-pill').style.display='flex';
+    setEl('user-name',d.name);
+    showToast('Welcome, '+d.name+'! 🌿');
+  }catch(e){err.textContent='Connection error';err.style.display='block';}
+}
+
+// ── Chat widget ────────────────────────────────────────────────────────────
+let chatOpen=false;
+function toggleChat(){chatOpen=!chatOpen;document.getElementById('chat-window').classList.toggle('open',chatOpen);if(chatOpen&&document.getElementById('chat-body').children.length===0)addMsg('bot','👋 Hello! I\'m the Vana Sethu AI assistant.\n\nAsk me about trees, ward green cover, maintenance alerts, or health issues. I\'m here to help!');}
+document.getElementById('chat-fab').onclick=toggleChat;
+document.getElementById('open-chat-hero').onclick=()=>{if(!chatOpen)toggleChat();};
+
+function addMsg(type,text){
+  const body=document.getElementById('chat-body');
+  const div=document.createElement('div');
+  div.className='chat-msg '+type;
+  div.textContent=text;
+  body.appendChild(div);
+  body.scrollTop=body.scrollHeight;
+  return div;
+}
+
+function quickMsg(text){document.getElementById('chat-input').value=text;sendChat();}
+
+async function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const text=inp.value.trim();
+  if(!text)return;
+  inp.value='';
+  document.getElementById('chat-quick').style.display='none';
+  addMsg('user',text);
+  const typing=addMsg('typing','Thinking…');
+  try{
+    const r=await fetch(`${API}/dashboard/query`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:text})});
+    const d=await r.json();
+    typing.remove();
+    if(d.status==='blocked'){addMsg('bot','🛡 I can\'t help with that request. Please try rephrasing.');return;}
+    const data=d.data||{};
+    let reply='';
+    if(data.trees!==undefined){
+      reply=`Found ${data.count} tree${data.count!==1?'s':''} matching your query.`;
+      if(data.trees.length>0){reply+='\n\n'+data.trees.slice(0,5).map(t=>`• ${t.species} (Ward ${t.ward}) — Health: ${t.health_score}/100, Status: ${t.status}`).join('\n');if(data.trees.length>5)reply+=`\n…and ${data.trees.length-5} more.`;}
+    } else if(data.deficient_wards){
+      reply=`${data.deficient_wards.length} ward${data.deficient_wards.length!==1?'s':''} have low green cover:\n\n`+data.deficient_wards.slice(0,5).map(w=>`• Ward ${w.ward_id}: ${w.green_cover_pct?.toFixed(1)}%`).join('\n');
+    } else if(data.inventory){
+      const inv=data.inventory;
+      reply=`🌳 City Overview:\n• Total trees: ${inv.total_trees}\n• Average health: ${inv.avg_health_score}/100\n• Trees needing maintenance: ${inv.maintenance_due}\n• Deficient wards: ${data.deficient_wards_count}`;
+      if(data.weather)reply+=`\n\n🌡 Weather: ${data.weather.temperature}°C, ${data.weather.condition_text}`;
+    } else {
+      reply='Here\'s what I found:\n'+JSON.stringify(d.data,null,2).slice(0,300);
+    }
+    addMsg('bot',reply);
+  }catch(e){typing.remove();addMsg('bot','Sorry, I couldn\'t reach the server. Please try again.');}
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(msg,color='green'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.borderLeftColor=color==='amber'?'#E65100':'#2E7D32';
+  t.style.display='block';
+  setTimeout(()=>t.style.display='none',4000);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+loadStats();
+const token=localStorage.getItem('auth_token');
+if(token){document.getElementById('user-pill').style.display='flex';setEl('user-name',localStorage.getItem('user_name')||'');}
+</script>
+</body>
+</html>
