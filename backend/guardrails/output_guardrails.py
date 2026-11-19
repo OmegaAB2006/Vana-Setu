@@ -49,22 +49,41 @@ def validate_json_schema(data: dict, schema: dict) -> tuple[bool, str]:
         return False, str(e.message)
 
 
+# Singleton — load Detoxify model once at first use, never reload per-request
+_detoxify_model = None
+_detoxify_loaded = False   # True once we've attempted load (even if it failed)
+
+
+def _get_detoxify():
+    global _detoxify_model, _detoxify_loaded
+    if not _detoxify_loaded:
+        _detoxify_loaded = True
+        try:
+            from detoxify import Detoxify
+            _detoxify_model = Detoxify("original")
+        except Exception:
+            _detoxify_model = None
+    return _detoxify_model
+
+
 def check_toxicity(text: str) -> tuple[bool, float]:
     """
-    Lightweight toxicity check. Uses detoxify if available, else regex fallback.
+    Lightweight toxicity check. Uses detoxify singleton if available, else regex fallback.
     Returns (is_toxic: bool, score: float).
     """
-    try:
-        from detoxify import Detoxify
-        result = Detoxify("original").predict(text)
-        score = result.get("toxicity", 0.0)
-        return score > 0.6, score
-    except ImportError:
-        # Regex fallback
-        toxic_keywords = r"\b(kill|harm|destroy|attack|violate|abuse)\b"
-        if re.search(toxic_keywords, text, re.IGNORECASE):
-            return True, 1.0
-        return False, 0.0
+    model = _get_detoxify()
+    if model is not None:
+        try:
+            result = model.predict(text)
+            score = result.get("toxicity", 0.0)
+            return score > 0.6, score
+        except Exception:
+            pass
+    # Regex fallback
+    toxic_keywords = r"\b(kill|harm|destroy|attack|violate|abuse)\b"
+    if re.search(toxic_keywords, text, re.IGNORECASE):
+        return True, 1.0
+    return False, 0.0
 
 
 def strip_pii_from_output(text: str) -> str:

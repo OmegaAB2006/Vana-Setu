@@ -441,7 +441,25 @@ body {
   transition: border-color .15s, background .15s;
   margin-bottom: 20px;
 }
-.upload-zone:hover { border-color: var(--forest); background: var(--forest-pale); }
+.upload-zone:hover  { border-color: var(--forest); background: var(--forest-pale); }
+.upload-zone.drag-over {
+  border-color: var(--forest);
+  background: var(--forest-pale);
+  transform: scale(1.01);
+}
+
+/* Analyse button spinner */
+.btn-spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: btn-spin .7s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
 .upload-icon { font-size: 36px; margin-bottom: 10px; }
 .upload-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 .env-params { margin-bottom: 18px; }
