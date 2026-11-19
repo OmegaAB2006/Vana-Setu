@@ -3,7 +3,7 @@ app.py — Flask entry point for Smart Urban Tree Platform
 """
 import os
 import uuid
-from flask import Flask, g
+from flask import Flask, g, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -16,7 +16,10 @@ from backend.routes.agent_routes import agent_bp
 from backend.routes.data_routes import data_bp
 from backend.live_data.data_sync import start_scheduler
 
-app = Flask(__name__)
+# Serve static frontend files from the frontend/ directory
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
 
 # CORS — allow frontend on any origin during dev
@@ -39,6 +42,16 @@ def inject_request_id():
 # Register blueprints
 app.register_blueprint(agent_bp, url_prefix="/api")
 app.register_blueprint(data_bp, url_prefix="/api/data")
+
+
+@app.route("/")
+def index():
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+
+@app.route("/<path:filename>")
+def frontend_files(filename):
+    return send_from_directory(FRONTEND_DIR, filename)
 
 
 @app.route("/health")

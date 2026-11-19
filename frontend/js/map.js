@@ -88,12 +88,12 @@ async function loadMap() {
       preferCanvas:      false,
     }).setView([12.9716, 77.5946], 11);
 
-    // Subtle OSM tiles — CartoDB Positron gives cleaner base for data overlays
+    // OpenStreetMap tiles — free, no API key, most reliable
     L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
-        attribution: '&copy; <a href="https://carto.com/">CartoDB</a> &copy; <a href="https://openstreetmap.org">OSM</a>',
-        subdomains: "abcd",
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        subdomains: "abc",
         maxZoom: 19,
       }
     ).addTo(leafletMap);
