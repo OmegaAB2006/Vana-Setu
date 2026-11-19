@@ -74,6 +74,102 @@ def inventory_summary():
     return jsonify(get_summary())
 
 
+@agent_bp.route("/inventory/<int:tree_id>", methods=["GET"])
+def get_tree(tree_id):
+    from backend.agents.inventory_agent import get_tree_by_id
+    user_role = g.get("user_role", "citizen")
+    tree = get_tree_by_id(tree_id, user_role)
+    if tree is None:
+        return jsonify({"status": "error", "message": f"Tree {tree_id} not found"}), 404
+    return jsonify(tree)
+
+
+@agent_bp.route("/inventory/<int:tree_id>", methods=["PUT"])
+@require_role("officer", "admin")
+def update_tree(tree_id):
+    from backend.models.db import SessionLocal, Tree, write_audit
+    body = request.get_json(silent=True) or {}
+    allowed = {"species", "ward", "age_years", "health_score", "last_checked", "status",
+               "latitude", "longitude"}
+    updates = {k: v for k, v in body.items() if k in allowed}
+    if not updates:
+        return jsonify({"status": "error", "message": "No valid fields to update"}), 400
+    db = SessionLocal()
+    try:
+        tree = db.query(Tree).filter(Tree.id == tree_id).first()
+        if not tree:
+            return jsonify({"status": "error", "message": f"Tree {tree_id} not found"}), 404
+        old_vals = {k: getattr(tree, k) for k in updates}
+        for k, v in updates.items():
+            setattr(tree, k, v)
+        db.commit()
+        db.refresh(tree)
+        write_audit(db, g.get("user_id", "unknown"), "UPDATE", "trees", tree_id, old_vals, updates)
+        return jsonify({"status": "ok", "message": f"Tree {tree_id} updated", "tree": {
+            "id": tree.id, "species": tree.species, "ward": tree.ward,
+            "health_score": tree.health_score, "status": tree.status,
+        }})
+    finally:
+        db.close()
+
+
+@agent_bp.route("/inventory/<int:tree_id>", methods=["DELETE"])
+@require_role("officer", "admin")
+def delete_tree(tree_id):
+    from backend.models.db import SessionLocal, Tree, write_audit
+    db = SessionLocal()
+    try:
+        tree = db.query(Tree).filter(Tree.id == tree_id).first()
+        if not tree:
+            return jsonify({"status": "error", "message": f"Tree {tree_id} not found"}), 404
+        old = {"species": tree.species, "ward": tree.ward}
+        db.delete(tree)
+        db.commit()
+        write_audit(db, g.get("user_id", "unknown"), "DELETE", "trees", tree_id, old, None)
+        return jsonify({"status": "ok", "message": f"Tree {tree_id} deleted"})
+    finally:
+        db.close()
+
+
+@agent_bp.route("/maintenance", methods=["POST"])
+@require_role("officer", "admin")
+def log_maintenance_route():
+    from backend.agents.health_agent import log_maintenance
+    body = request.get_json(silent=True) or {}
+    tree_id      = body.get("tree_id")
+    action       = body.get("action", "").strip()
+    officer_name = body.get("officer_name", g.get("user_id", "unknown"))
+    notes        = body.get("notes", "")
+    approved_by  = body.get("approved_by", "")
+    if not tree_id or not action:
+        return jsonify({"status": "error", "message": "tree_id and action are required"}), 400
+    result = log_maintenance(int(tree_id), action, officer_name, notes, approved_by,
+                             user_id=g.get("user_id", "unknown"))
+    return jsonify(result), 201
+
+
+@agent_bp.route("/maintenance/<int:tree_id>", methods=["GET"])
+def get_maintenance_log(tree_id):
+    from backend.models.db import SessionLocal, MaintenanceLog
+    db = SessionLocal()
+    try:
+        rows = (db.query(MaintenanceLog)
+                  .filter(MaintenanceLog.tree_id == tree_id)
+                  .order_by(MaintenanceLog.date.desc())
+                  .all())
+        return jsonify([{
+            "id":           r.id,
+            "tree_id":      r.tree_id,
+            "action":       r.action,
+            "date":         r.date.isoformat() if r.date else None,
+            "officer_name": r.officer_name,
+            "notes":        r.notes,
+            "approved_by":  r.approved_by,
+        } for r in rows])
+    finally:
+        db.close()
+
+
 # ── Health Agent (Agent 1) ────────────────────────────────────────────────────
 
 @agent_bp.route("/health/assess", methods=["POST"])

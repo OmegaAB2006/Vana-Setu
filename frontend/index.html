@@ -163,30 +163,133 @@
 
   <!-- ── INVENTORY ─────────────────────────────────────────────────────────── -->
   <section class="panel" id="panel-inventory">
-    <div class="page-header"><h1>Tree Inventory</h1></div>
+    <div class="page-header">
+      <h1>Tree Inventory</h1>
+      <button class="btn-primary" onclick="openAddModal()" style="margin-left:auto">+ Add Tree</button>
+    </div>
+
+    <!-- AI Search bar with plain-language hint -->
     <div class="nl-bar">
-      <input type="text" id="nl-query-input" placeholder='Try: "Show sick Neem trees in Ward 7"'/>
+      <input type="text" id="nl-query-input"
+        placeholder='Plain language: "show diseased Neem trees in Ward 7" or "trees needing attention"'/>
       <button id="nl-query-btn" class="btn-primary">Search with AI</button>
     </div>
+
+    <!-- Quick filters -->
     <div class="filter-row">
-      <input type="number" id="filter-ward" placeholder="Ward #" min="1" max="198"/>
-      <input type="text" id="filter-species" placeholder="Species"/>
+      <input type="number" id="filter-ward" placeholder="Ward number e.g. 7" min="1" max="198"/>
+      <input type="text" id="filter-species" placeholder="Species e.g. Neem"/>
       <select id="filter-status">
-        <option value="">All Status</option>
-        <option value="healthy">Healthy</option>
-        <option value="stressed">Stressed</option>
-        <option value="diseased">Diseased</option>
-        <option value="critical">Critical</option>
+        <option value="">All Statuses</option>
+        <option value="healthy">✅ Healthy</option>
+        <option value="stressed">⚠️ Stressed</option>
+        <option value="diseased">🔴 Diseased</option>
+        <option value="critical">🚨 Critical</option>
       </select>
-      <button id="filter-btn" class="btn-secondary">Filter</button>
+      <button id="filter-btn" class="btn-secondary">Apply Filter</button>
     </div>
+
     <div id="inventory-status"></div>
     <table class="data-table" id="inventory-table">
-      <thead><tr><th>ID</th><th>Species</th><th>Ward</th><th>Age</th><th>Health</th><th>Status</th><th>Last Checked</th></tr></thead>
+      <thead><tr><th>#</th><th>Species</th><th>Ward</th><th>Age</th><th>Health</th><th>Status</th><th>Last Checked</th><th>Actions</th></tr></thead>
       <tbody id="inventory-tbody"></tbody>
     </table>
     <div class="table-count" id="inventory-count"></div>
   </section>
+
+  <!-- ── ADD / EDIT TREE MODAL ──────────────────────────────────────────────── -->
+  <div class="inv-modal-overlay" id="inv-modal" style="display:none" onclick="if(event.target===this)closeInvModal()">
+    <div class="inv-modal-box">
+      <div class="inv-modal-header">
+        <h2 id="inv-modal-title">Add New Tree</h2>
+        <button class="inv-modal-close" onclick="closeInvModal()">✕</button>
+      </div>
+      <input type="hidden" id="inv-form-tree-id"/>
+      <div class="inv-form-grid">
+        <div class="inv-field">
+          <label>Tree Species <span class="req">*</span></label>
+          <input type="text" id="inv-form-species" placeholder="e.g. Neem, Peepal, Banyan"/>
+        </div>
+        <div class="inv-field">
+          <label>Ward Number <span class="req">*</span></label>
+          <input type="number" id="inv-form-ward" placeholder="e.g. 7" min="1" max="198"/>
+        </div>
+        <div class="inv-field">
+          <label>Latitude</label>
+          <input type="number" id="inv-form-lat" placeholder="e.g. 12.9716" step="0.0001"/>
+        </div>
+        <div class="inv-field">
+          <label>Longitude</label>
+          <input type="number" id="inv-form-lng" placeholder="e.g. 77.5946" step="0.0001"/>
+        </div>
+        <div class="inv-field">
+          <label>Age (years)</label>
+          <input type="number" id="inv-form-age" placeholder="e.g. 5" min="0"/>
+        </div>
+        <div class="inv-field">
+          <label>Health Score (0–100)</label>
+          <input type="number" id="inv-form-health" placeholder="100" min="0" max="100"/>
+        </div>
+        <div class="inv-field">
+          <label>Status</label>
+          <select id="inv-form-status">
+            <option value="healthy">✅ Healthy</option>
+            <option value="stressed">⚠️ Stressed</option>
+            <option value="diseased">🔴 Diseased</option>
+            <option value="critical">🚨 Critical</option>
+          </select>
+        </div>
+        <div class="inv-field">
+          <label>Last Checked</label>
+          <input type="date" id="inv-form-date"/>
+        </div>
+      </div>
+      <p class="inv-modal-error" id="inv-modal-error"></p>
+      <div class="inv-modal-footer">
+        <button class="btn-secondary" onclick="closeInvModal()">Cancel</button>
+        <button class="btn-primary" id="inv-modal-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAINTENANCE MODAL ──────────────────────────────────────────────────── -->
+  <div class="inv-modal-overlay" id="maint-modal" style="display:none" onclick="if(event.target===this)closeMaintModal()">
+    <div class="inv-modal-box">
+      <div class="inv-modal-header">
+        <h2>🔧 Maintenance Log</h2>
+        <button class="inv-modal-close" onclick="closeMaintModal()">✕</button>
+      </div>
+      <p id="maint-tree-label" style="font-weight:600;margin-bottom:12px;color:var(--forest)"></p>
+      <input type="hidden" id="maint-tree-id-hidden"/>
+
+      <!-- Existing log -->
+      <div class="maint-log-section">
+        <div class="inv-field-label">Past Maintenance Records</div>
+        <ul id="maint-log-list" class="maint-log-list"></ul>
+      </div>
+
+      <!-- New entry -->
+      <div class="inv-form-grid" style="margin-top:16px">
+        <div class="inv-field" style="grid-column:1/-1">
+          <label>Action Performed <span class="req">*</span></label>
+          <input type="text" id="maint-action" placeholder='e.g. "Applied neem oil spray" or "Pruned dead branches"'/>
+        </div>
+        <div class="inv-field" style="grid-column:1/-1">
+          <label>Notes</label>
+          <input type="text" id="maint-notes" placeholder="Any additional notes (optional)"/>
+        </div>
+        <div class="inv-field" style="grid-column:1/-1">
+          <label>Officer Name</label>
+          <input type="text" id="maint-officer" placeholder="Your name or officer ID (optional)"/>
+        </div>
+      </div>
+      <p class="inv-modal-error" id="maint-modal-error"></p>
+      <div class="inv-modal-footer">
+        <button class="btn-secondary" onclick="closeMaintModal()">Close</button>
+        <button class="btn-primary" id="maint-save-btn">Log Action</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── HEALTH SCANNER ────────────────────────────────────────────────────── -->
   <section class="panel" id="panel-health">
