@@ -422,15 +422,21 @@ def assistant():
     if not query:
         return jsonify({"reply": "Please type a question.", "navigate_to": None})
 
+    import re as _re
     q = query.lower()
 
+    def _word(w, text):
+        """True if w appears as a whole word in text."""
+        return bool(_re.search(r'\b' + _re.escape(w) + r'\b', text))
+
     # ── Greetings & small-talk ────────────────────────────────────────────────
-    if any(kw in q for kw in ["hello", "hi", "hey", "namaste", "good morning", "good evening"]):
+    if any(_word(kw, q) for kw in ["hello", "hi", "hey", "namaste"]) or \
+       any(kw in q for kw in ["good morning", "good evening"]):
         return jsonify({
             "reply": "Hello! 👋 I'm the **Vana Sethu AI**. Ask me anything about Bengaluru's urban trees — tree counts, ward green cover, weather, or say *'go to map'* to explore!",
             "navigate_to": None,
         })
-    if any(kw in q for kw in ["thank", "thanks", "great", "awesome", "good job", "well done", "nice"]):
+    if any(kw in q for kw in ["thank", "thanks", "great", "awesome", "good job", "well done", "nice one", "nice work", "nicely done"]):
         return jsonify({
             "reply": "You're welcome! 🌳 Let me know if you have more questions about Bengaluru's urban trees.",
             "navigate_to": None,
