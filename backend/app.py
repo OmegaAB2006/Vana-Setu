@@ -26,11 +26,12 @@ app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
 CORS(app)
 
 # Rate limiting — Operational Guardrail 6
-# 30 req/min for most routes; /api/assistant gets its own 60/min (chatbot UX)
+# API endpoints: 60/min. Chatbot (/api/assistant) is exempt — it handles its
+# own lightweight logic and must never block mid-conversation.
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["500 per day", "30 per minute"],
+    default_limits=["1000 per day", "60 per minute"],
     storage_uri="memory://",
 )
 
