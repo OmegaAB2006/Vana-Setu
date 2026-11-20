@@ -48,7 +48,7 @@ app.register_blueprint(data_bp, url_prefix="/api/data")
 
 @app.route("/")
 def index():
-    return send_from_directory(FRONTEND_DIR, "index.html")
+    return send_from_directory(FRONTEND_DIR, "landing.html")
 
 
 @app.route("/<path:filename>")
